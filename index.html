@@ -239,6 +239,13 @@ html[data-layout="sidebar"] .kpi-strip{
   border:1px solid var(--line);border-radius:999px;padding:3px 10px
 }
 .mod-card .st .i{width:14px;height:14px;color:var(--red)}
+.mod-report-card{grid-column:span 2;border-color:color-mix(in srgb,var(--navy) 28%,var(--line))}
+.mod-report-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:4px}
+.mod-report-stats>span{min-width:0;padding:8px 9px;border:1px solid var(--line);border-radius:11px;background:var(--bg-alt)}
+.mod-report-stats small{display:block;color:var(--muted);font-size:10.5px;white-space:nowrap}
+.mod-report-stats b{display:block;margin-top:3px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mod-report-foot{font-size:11px;color:var(--muted);line-height:1.7}
+:root[data-theme="dark"] .mod-report-stats>span{background:#1b2a36;border-color:#2c4152}
 :root[data-theme="dark"] .mod-card .ic{background:#22323f;color:#bcd2e2;box-shadow:inset 0 0 0 1px #2f4658}
 :root[data-theme="dark"] .mod-card .ic .i{color:#bcd2e2}
 :root[data-theme="dark"] .mod-card .st{background:#1b2a36;border-color:#2c4152;color:#c9dae7}
@@ -946,6 +953,11 @@ img,svg,video{max-width:100%}
   .mod-head{margin:20px 0 10px}
   .mod-head h3{font-size:14.5px}
   .mod-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:18px}
+  .mod-report-card{grid-column:1/-1}
+  .mod-report-stats{gap:6px}
+  .mod-report-stats>span{padding:6px 7px}
+  .mod-report-stats small{font-size:9.5px}
+  .mod-report-stats b{font-size:12px}
   .mod-card{padding:13px 12px;gap:7px;border-radius:15px}
   .mod-card .ic{width:36px;height:36px;border-radius:11px}
   .mod-card .ic .i{width:18px;height:18px}
@@ -2338,7 +2350,6 @@ window.icon = function (name, cls) {
     can: function (perm) {
       var u = readSession();
       if (!u) return false;
-      if (SHARED_MODE && perm === 'user.manage') return false;
       var role = ROLES[u.role] || ROLES.viewer;
       if (role.perms.indexOf('*') > -1) return true;
       return role.perms.indexOf(perm) > -1;
@@ -4460,8 +4471,11 @@ window.XLSXWriter = (function () {
     var users = Auth.users();
     var me = Auth.current();
     var html = '<div class="page-head"><div><h2>کاربران سیستم</h2><p>مدیریت حساب‌های کاربری، نقش‌ها و سطح دسترسی اعضای تیم.</p></div>' +
-      '<div class="row-flex"><button class="btn btn-line btn-sm" data-act="auth-reset-all">' + icon('refresh') + ' راه‌اندازی اولیه</button>' +
-      '<button class="btn btn-red" data-act="user-new">' + icon('plus') + ' کاربر جدید</button></div></div>';
+      (Auth.sharedMode
+        ? '<span class="tag strong">حساب مرکزی: Alipezeshk</span>'
+        : '<div class="row-flex"><button class="btn btn-line btn-sm" data-act="auth-reset-all">' + icon('refresh') + ' راه‌اندازی اولیه</button>' +
+          '<button class="btn btn-red" data-act="user-new">' + icon('plus') + ' کاربر جدید</button></div>') + '</div>' +
+      (Auth.sharedMode ? '<div class="hint-box" style="margin-bottom:16px">' + icon('shield') + '<span>حساب مدیر به‌صورت مرکزی مدیریت می‌شود. این نسخه برای جلوگیری از ساخت حساب محلیِ ناهماهنگ، افزودن/حذف کاربران را از این صفحه غیرفعال کرده است.</span></div>' : '');
 
     if (me) {
       html += '<div class="card" style="margin-bottom:18px"><div class="card-head"><div><h3>مشخصات من</h3>' +
@@ -4480,9 +4494,9 @@ window.XLSXWriter = (function () {
 
     html += '<div class="card" style="margin-bottom:18px"><div class="card-head"><div><h3>حساب‌ها (' + S.fa(users.length) + ')</h3>' +
       '<p>نام کاربری، نقش، وضعیت و آخرین ورود هر حساب</p></div></div>' +
-      '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>نام</th><th>نام خانوادگی</th><th>نام کاربری</th><th>نقش</th><th>تماس و حساب</th><th>وضعیت</th><th>آخرین ورود</th><th>امروز / دستمزد</th><th>عملیات</th></tr></thead><tbody>';
+      '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>نام</th><th>نام خانوادگی</th><th>نام کاربری</th><th>نقش</th><th>تماس و حساب</th><th>وضعیت</th><th>آخرین ورود</th><th>امروز / دستمزد</th>' + (Auth.sharedMode ? '' : '<th>عملیات</th>') + '</tr></thead><tbody>';
     if (!users.length) {
-      html += '<tr><td colspan="9">' + emptyBox('هنوز کاربری ساخته نشده', 'با دکمهٔ «کاربر جدید» اولین حساب را بسازید.', 'users') + '</td></tr>';
+      html += '<tr><td colspan="' + (Auth.sharedMode ? '8' : '9') + '">' + emptyBox('هنوز کاربری ساخته نشده', 'با دکمهٔ «کاربر جدید» اولین حساب را بسازید.', 'users') + '</td></tr>';
     }
     users.forEach(function (u) {
       var isMe = me && me.id === u.id;
@@ -4503,12 +4517,12 @@ window.XLSXWriter = (function () {
             (run ? ' <span class="tag live">در حال کار</span>' : '') +
             '<div class="small muted">' + wageLabel(wr.amount) + '</div>';
         })() + '</td>' +
-        '<td class="wrap"><div class="row-flex tight">' +
+        (Auth.sharedMode ? '' : '<td class="wrap"><div class="row-flex tight">' +
         '<button class="icon-btn" style="width:30px;height:30px" data-act="user-edit" data-id="' + u.id + '" title="ویرایش">' + icon('edit') + '</button>' +
         '<button class="icon-btn" style="width:30px;height:30px" data-act="user-pass" data-id="' + u.id + '" title="تغییر رمز">' + icon('shield') + '</button>' +
         '<button class="icon-btn" style="width:30px;height:30px" data-act="user-toggle" data-id="' + u.id + '" title="' + (u.active === false ? 'فعال‌سازی' : 'غیرفعال‌سازی') + '">' + icon(u.active === false ? 'check' : 'x') + '</button>' +
         (isMe ? '' : '<button class="icon-btn" style="width:30px;height:30px" data-act="user-del" data-id="' + u.id + '" title="حذف کاربر">' + icon('trash') + '</button>') +
-        '</div></td></tr>';
+        '</div></td>') + '</tr>';
     });
     html += '</tbody></table></div></div>';
 
@@ -4555,6 +4569,11 @@ window.XLSXWriter = (function () {
 
   /* ---------- گزارش کارکرد یک کاربر ---------- */
   views.user = function (id) {
+    var me = Auth.current();
+    var isAdmin = Auth.can('user.manage');
+    if (!isAdmin && (!me || me.id !== id)) {
+      return '<div class="card"><div class="card-body">' + emptyBox('گزارش فقط برای صاحب حساب', 'هر کاربر فقط گزارش کارکرد خودش را می‌بیند.', 'shield') + '</div></div>';
+    }
     var u = Auth.users().filter(function (x) { return x.id === id; })[0];
     if (!u) {
       return '<div class="card"><div class="card-body">' + emptyBox('کاربر یافت نشد', 'حساب کاربری موردنظر حذف شده است.', 'users') + '</div></div>';
@@ -4569,13 +4588,13 @@ window.XLSXWriter = (function () {
     var doneOrders = orders.filter(function (o) { return o.status === 'done'; }).length;
 
     var html = '<div class="page-head"><div class="hstack">' +
-      '<a class="btn btn-ghost btn-sm" href="#/users">' + icon('chevronR') + ' بازگشت به کاربران</a>' +
+      '<a class="btn btn-ghost btn-sm" href="' + (isAdmin ? '#/users' : '#/dashboard') + '">' + icon('chevronR') + (isAdmin ? ' بازگشت به کاربران' : ' بازگشت به داشبورد') + '</a>' +
       '<h2>' + esc(u.firstName || '') + ' ' + esc(u.lastName || '') + ' ' + roleBadge(u.role) + '</h2>' +
       '<p>گزارش کارکرد: سفارش‌های ثبت‌شده، پرداختی‌ها و فعالیت‌های این کاربر.</p></div>' +
-      '<div class="row-flex">' +
-      '<button class="btn btn-line btn-sm" data-act="user-edit" data-id="' + u.id + '">' + icon('edit') + ' ویرایش مشخصات</button>' +
-      '<button class="btn btn-line btn-sm" data-act="user-pass" data-id="' + u.id + '">' + icon('shield') + ' تغییر رمز</button>' +
-      '</div></div>';
+      (isAdmin && !Auth.sharedMode ? '<div class="row-flex">' +
+        '<button class="btn btn-line btn-sm" data-act="user-edit" data-id="' + u.id + '">' + icon('edit') + ' ویرایش مشخصات</button>' +
+        '<button class="btn btn-line btn-sm" data-act="user-pass" data-id="' + u.id + '">' + icon('shield') + ' تغییر رمز</button>' +
+        '</div>' : '') + '</div>';
 
     /* ---------- ساعت‌کار و دستمزد ---------- */
     var wToday = S.wageReport(u.id);
@@ -5148,7 +5167,7 @@ window.XLSXWriter = (function () {
     dashboard: 'dashboard.view', orders: 'order.view', order: 'order.view', 'new-order': 'order.create',
     quick: 'order.view', customers: 'customer.view', customer: 'customer.view',
     accounting: 'accounting.view', reports: 'reports.view', services: 'service.view',
-    projects: 'project.view', users: 'user.manage', user: 'user.manage',
+    projects: 'project.view', users: 'user.manage', user: 'profile.view',
     settings: 'settings.view', profile: 'profile.view'
   };
   function render() {
@@ -6061,13 +6080,32 @@ window.XLSXWriter = (function () {
   /* کارت‌های ماژول — جایگزین منوی کشویی در چیدمان کارتی */
   function moduleCards() {
     var newCount = S.state.orders.filter(function (o) { return o.status === 'new'; }).length;
+    var items = MODULES.filter(function (m) { return m.perm !== 'user.manage'; });
+    if (Auth.can('user.manage')) {
+      items.push({ go: '#/users', ic: 'users', t: 'کاربران', d: 'صفحهٔ مدیریت کاربران و گزارش کارکرد تیم', perm: 'user.manage' });
+    } else {
+      var me = Auth.current();
+      if (me && Auth.can('profile.view')) {
+        var monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+        var myToday = S.wageReport(me.id), myMonth = S.wageReport(me.id, monthStart.getTime());
+        var myOrders = S.state.orders.filter(function (o) { return o.createdBy === me.id; });
+        var finished = myOrders.filter(function (o) { return o.status === 'done'; }).length;
+        var reportStats = '<div class="mod-report-stats">' +
+          '<span><small>ساعت این ماه</small><b>' + S.fa((myMonth.seconds / 3600).toFixed(1)) + '</b></span>' +
+          '<span><small>دستمزد این ماه</small><b>' + S.fa(S.moneyShort(myMonth.amount)) + '</b></span>' +
+          '<span><small>تحویل‌شده</small><b>' + S.fa(finished) + '</b></span></div>' +
+          '<span class="mod-report-foot">امروز: ' + S.fa((myToday.seconds / 3600).toFixed(1)) + ' ساعت · مشاهدهٔ گزارش کامل</span>';
+        items.push({ go: '#/user/' + me.id, ic: 'chart', t: 'گزارش کارکرد من',
+          d: 'ساعات، دستمزد و سفارش‌های ثبت‌شدهٔ شما', perm: 'profile.view', reportStats: reportStats });
+      }
+    }
     var html = '<div class="mod-head"><div><h3>دسترسی سریع به بخش‌ها</h3></div></div>' +
       '<div class="mod-grid" id="modGrid">';
-    MODULES.forEach(function (m) {
+    items.forEach(function (m) {
       var badge = (m.badge && newCount) ? ' <span class="st">' + icon('inbox') + S.fa(newCount) + ' سفارش جدید</span>' : '';
-      html += '<a class="mod-card fade-in" href="' + m.go + '" data-perm="' + m.perm + '">' +
+      html += '<a class="mod-card fade-in' + (m.reportStats ? ' mod-report-card' : '') + '" href="' + m.go + '" data-perm="' + m.perm + '">' +
         '<span class="ic">' + icon(m.ic) + '</span>' +
-        '<h4>' + esc(m.t) + '</h4><p>' + esc(m.d) + '</p>' + badge + '</a>';
+        '<h4>' + esc(m.t) + '</h4><p>' + esc(m.d) + '</p>' + badge + (m.reportStats || '') + '</a>';
     });
     return html + '</div>';
   }
@@ -6134,5 +6172,5 @@ window.XLSXWriter = (function () {
 })();
 
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4c6293c0e4a1310',t:'MTc5MjMxMjAxNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4c68fbc1b38dbde',t:'MTc5MjMxNjIxNQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
